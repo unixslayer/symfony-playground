@@ -1,0 +1,88 @@
+version: '3'
+
+services:
+    nginx:
+        image: nginx:1.17-alpine
+        depends_on:
+            - php
+        volumes:
+            - ./:/var/www/html:ro
+            - ./.docker/proxy/conf.d/:/etc/nginx/conf.d/
+        ports:
+            - 80:80
+
+    php:
+        build:
+            context: .
+            dockerfile: .docker/php/Dockerfile
+        image: unixslayer/symfony-playground
+        env_file:
+            - ./.env
+        environment:
+            PHP_OPCACHE_ENABLE: 0
+            PHP_OPCACHE_ENABLE_CLI: 0
+        volumes:
+            - ./:/var/www/html
+        links:
+            - "mercure:sf.local"
+            - "database:database.sf.local"
+            - "rabbitmq:rabbitmq.sf.local"
+            - "redis:redis.sf.local"
+            - "mailhog:mail.sf.local"
+
+    database:
+        image: postgres:13.1
+        environment:
+            POSTGRES_USER: test
+            POSTGRES_PASSWORD: test
+            POSTGRES_DB: playground
+        volumes:
+            - database:/var/lib/postgresql/data/
+        ports:
+            - 5432:5432
+        healthcheck:
+            test: [ "CMD", "pg_isready" ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    rabbitmq:
+        image: rabbitmq:3.8-management
+        environment:
+            RABBITMQ_DEFAULT_USER: test
+            RABBITMQ_DEFAULT_PASS: test
+            RABBITMQ_DEFAULT_VHOST: playground
+        ports:
+            - 15672:15672
+            - 5672:5672
+        healthcheck:
+            test: [ "CMD", "nc", "-z", "localhost", "5672" ]
+            interval: 10s
+            timeout: 5s
+            retries: 10
+
+    mailhog:
+        image: mailhog/mailhog
+        ports:
+            - 1025:1025
+            - 8025:8025
+
+    redis:
+        image: redis:6.2.1
+        ports:
+            - 6379:6379
+        healthcheck:
+            test: [ "CMD", "redis-cli", "ping" ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    mercure:
+        image: dunglas/mercure
+        environment:
+            SERVER_NAME: ':80'
+            MERCURE_PUBLISHER_JWT_KEY: '!ChangeMe!'
+            MERCURE_SUBSCRIBER_JWT_KEY: '!ChangeMe!'
+
+volumes:
+    database:

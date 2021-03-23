@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-12">
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" placeholder="Message" name="message"/>
+                <button class="btn btn-primary" type="button" id="sendMessageBtn">Send</button>
+            </div>
+
+            <ul id="messages" class="list-group list-group-flush"></ul>
+        </div>
+    </div>
+
+
+    <div data-controller="mercure"></div>
+{% endblock %}
